@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace AdventOfCode2023.Day07
 {
-    internal class Day07 : IAocDay
+    internal class Day07part2 : IAocDay
     {
         private enum HandType
         {
@@ -36,7 +36,7 @@ namespace AdventOfCode2023.Day07
             { 'A', 14 },
             { 'K', 13 },
             { 'Q', 12 },
-            { 'J', 11 },
+            { 'J', 1 },
             { 'T', 10 },
             { '9', 9 },
             { '8', 8 },
@@ -53,6 +53,8 @@ namespace AdventOfCode2023.Day07
             var parsed = await ParseInput("Day07/input.txt");
 
             var score = GetHandsScore(parsed.hands);
+
+            Console.WriteLine(score);
         }
 
         private long GetHandsScore(IEnumerable<Hand> hands)
@@ -70,41 +72,51 @@ namespace AdventOfCode2023.Day07
 
         private static HandType GetHandType(Hand hand)
         {
-            Dictionary<char, int> cardCount = new();
+            Dictionary<char, int> cardCountsWithoutJoker = new();
 
-            foreach (var c in hand.cards)
+            foreach (var c in hand.cards.Where(c => c != 'J'))
             {
-                if (!cardCount.ContainsKey(c))
+                if (!cardCountsWithoutJoker.ContainsKey(c))
                 {
-                    cardCount[c] = 0;
+                    cardCountsWithoutJoker[c] = 0;
                 }
 
-                cardCount[c]++;
+                cardCountsWithoutJoker[c]++;
             }
 
-            var orderedByCount = cardCount.OrderByDescending(c => c.Value);
-
-            if (orderedByCount.First().Value == 5)
+            if (!cardCountsWithoutJoker.Any())
             {
                 return HandType.FiveOfAKind;
             }
-            else if (orderedByCount.First().Value == 4)
+
+            var orderedByCount = cardCountsWithoutJoker.OrderByDescending(c => c.Value)
+                .Select(c => new CardCount { card = c.Key, count = c.Value}).ToArray();
+
+            var jokerCount = hand.cards.Count(c => c == 'J');
+
+            orderedByCount[0].count += jokerCount;
+
+            if (orderedByCount[0].count >= 5)
+            {
+                return HandType.FiveOfAKind;
+            }
+            else if (orderedByCount[0].count == 4)
             {
                 return HandType.FourOfAKind;
             }
-            else if (orderedByCount.First().Value == 3 && orderedByCount.ElementAt(1).Value == 2)
+            else if (orderedByCount[0].count == 3 && orderedByCount[1].count == 2)
             {
                 return HandType.FullHouse;
             }
-            else if (orderedByCount.First().Value == 3)
+            else if (orderedByCount[0].count == 3)
             {
                 return HandType.ThreeOfAKind;
             }
-            else if (orderedByCount.ElementAt(0).Value == 2 && orderedByCount.ElementAt(1).Value == 2)
+            else if (orderedByCount[0].count == 2 && orderedByCount[1].count == 2)
             {
                 return HandType.TwoPair;
             }
-            else if (orderedByCount.ElementAt(0).Value == 2)
+            else if (orderedByCount[0].count == 2)
             {
                 return HandType.OnePair;
             }
@@ -165,6 +177,12 @@ namespace AdventOfCode2023.Day07
 
                 return 0;
             }
+        }
+
+        private struct CardCount
+        {
+            public char card;
+            public int count;
         }
     }
 }
